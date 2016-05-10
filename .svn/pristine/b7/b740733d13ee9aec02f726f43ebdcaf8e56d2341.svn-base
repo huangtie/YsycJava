@@ -1,0 +1,50 @@
+package com.mobile.service.util;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLConnection;
+
+import org.apache.commons.io.IOUtils;
+
+public class Getnetmd5 {
+	static ByteArrayOutputStream out=null;
+	public static String md5(String key){
+		String urlStr = "http://www.e-life365.cn/get_pass.ashx?upass=";//?receiver=2&sender=1&title=&type=0&content=%E5%8F%91%E5%8A%A8%E6%9C%BA%E7%9A%84&fileType=1";
+		 StringBuilder urlBur = new StringBuilder(urlStr);
+		 URL url = null;
+		 try {
+			 urlBur.append(key);
+			 url = new URL(urlBur.toString());
+		} catch (MalformedURLException e1) {
+			e1.printStackTrace();
+		}
+		 InputStream in = null;
+		  out = new ByteArrayOutputStream();
+		 try {
+		 URLConnection urlConn = url.openConnection();
+		 urlConn.connect();
+		 in = urlConn.getInputStream();
+		 IOUtils.copy(in, out);
+		 out.flush();
+		 } catch (IOException e) {
+		 e.printStackTrace();
+		 } finally {
+		 if (in != null) {
+		 try {
+		 in.close();
+		 } catch (IOException e) {
+		 e.printStackTrace();
+		 }
+		 }
+		 }
+		 
+		 return out.toString();
+	}
+	
+	public static void main(String[] args) {
+		System.out.println(Getnetmd5.md5("123123"));
+	}
+}

@@ -1,0 +1,63 @@
+package com.mobile.service.shangjianwang.dao;
+
+import java.util.List;
+import java.util.Map;
+
+
+public interface MeDao {
+	Map<String, Object> login(String username,String pwd) throws Exception;
+	/**
+	 * 获取免费书籍
+	 * @return
+	 * @throws Exception
+	 */
+	List<Map<String,Object>> getfreebooks(Map<String, Object> attrMap)throws Exception;
+	/**
+	 * 统计免费图书有多少本
+	 * @return
+	 * @throws Exception
+	 */
+	Long countfreebook() throws Exception;
+	/**
+	 * 获取已购买
+	 * @return
+	 * @throws Exception
+	 */
+	List<Map<String,Object>> getbuyedbooks(Map<String, Object> attrMap)throws Exception;
+	/**
+	 * 统计已购买
+	 * @return
+	 * @throws Exception
+	 */
+	Long countbuyedbook(Map<String, Object> attrMap) throws Exception;
+	/**
+	 * 获取所有能看得书（包括免费的和已购的）
+	 * @return
+	 * @throws Exception
+	 */
+	List<Map<String,Object>> getallcanreadbooks(Map<String, Object> attrMap)throws Exception;
+	/**
+	 * 统计所有能看得书（包括免费的和已购的）
+	 * @return
+	 * @throws Exception
+	 */
+	Long countcanreadbook(Map<String, Object> attrMap) throws Exception;
+	/**
+	 * 2.1.5.	获取书城书的列表包括根据关键字搜索列表
+	 * @return
+	 * @throws Exception
+	 */
+	List<Map<String,Object>> getbookcitybooks(Map<String, Object> attrMap)throws Exception;
+	/**
+	 * 统计获取书城书的列表包括根据关键字搜索列表
+	 * @return
+	 * @throws Exception
+	 */
+	Long countbookcitybook(Map<String, Object> attrMap) throws Exception;
+	/**
+	 * 2.1.6.	跟据书id获取每本书的详细章节
+	 * @return
+	 * @throws Exception
+	 */
+	List<Map<String,Object>> getbookdetailbyid(Map<String, Object> attrMap) throws Exception;
+}

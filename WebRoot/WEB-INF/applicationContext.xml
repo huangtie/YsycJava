@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans   
+           http://www.springframework.org/schema/beans/spring-beans-3.1.xsd   
+           http://www.springframework.org/schema/context   
+           http://www.springframework.org/schema/context/spring-context-3.1.xsd   
+           http://www.springframework.org/schema/aop   
+           http://www.springframework.org/schema/aop/spring-aop-3.1.xsd   
+           ">
+	<aop:aspectj-autoproxy />
+	<bean id="propertyConfigurer"
+		class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+		<property name="locations">
+			<list>
+				<value>WEB-INF/properties/jdbc.properties</value>
+			</list>
+		</property>
+	</bean>
+	<bean id="datasource"
+		class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+		<property name="driverClassName" value="${jdbc.driverClassName}" />
+		<property name="url" value="${jdbc.url}" />
+		<property name="username" value="${jdbc.username}" />
+		<property name="password" value="${jdbc.password}" />
+	</bean>
+	<bean id="sqldatasource"
+		class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+		<property name="driverClassName" value="${sqljdbc.driverClassName}" />
+		<property name="url" value="${sqljdbc.url}" />
+		<property name="username" value="${sqljdbc.username}" />
+		<property name="password" value="${sqljdbc.password}" />
+	</bean>
+	<bean id="sqljdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
+		<constructor-arg>
+			<ref bean="sqldatasource" />
+		</constructor-arg>
+	</bean>
+	<bean id="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
+		<constructor-arg>
+			<ref bean="datasource" />
+		</constructor-arg>
+	</bean>
+	<bean id="response" class="com.mobile.service.base.Response">
+		<property name="sqljdbcTemplate">
+			<ref bean="sqljdbcTemplate" />
+		</property>
+	</bean>
+	<bean id="meDao" class="com.mobile.service.shangjianwang.dao.jdbc.MeDaoJdbc">
+		<property name="jdbcTemplate">
+			<ref bean="jdbcTemplate" />
+		</property>
+		<property name="sqljdbcTemplate">
+			<ref bean="sqljdbcTemplate" />
+		</property>
+		<property name="response">
+			<ref bean="response" />
+		</property>
+	</bean>
+	<bean id="meService" class="com.mobile.service.shangjianwang.service.impl.MeServiceImpl">
+		<property name="meDao">
+			<ref bean="meDao" />
+		</property>
+	</bean>
+</beans>

@@ -1,0 +1,44 @@
+package com.mobile.service.base;
+
+import java.util.List;
+import java.util.Map;
+
+public class ListJsonTime {
+
+	private boolean _success;
+	private String error_msg;
+	private String time;
+	private Long count;
+	private List<Map<String, Object>> data;
+	public boolean is_success() {
+		return _success;
+	}
+	public void set_success(boolean _success) {
+		this._success = _success;
+	}
+	public String getError_msg() {
+		return error_msg;
+	}
+	public void setError_msg(String error_msg) {
+		this.error_msg = error_msg;
+	}
+	public List<Map<String, Object>> getData() {
+		return data;
+	}
+	public void setData(List<Map<String, Object>> data) {
+		this.data = data;
+	}
+	public Long getCount() {
+		return count;
+	}
+	public void setCount(Long count) {
+		this.count = count;
+	}
+	public void setTime(String time) {
+		this.time = time;
+	}
+	public String getTime() {
+		return time;
+	}
+	
+}

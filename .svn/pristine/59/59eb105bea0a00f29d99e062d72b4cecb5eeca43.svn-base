@@ -1,0 +1,22 @@
+package com.mobile.service.shangjianwang.model;
+
+import java.util.Map;
+
+public class MeJson {
+
+	private boolean _success;
+	private Map<String, Object> data;
+	public boolean is_success() {
+		return _success;
+	}
+	public void set_success(boolean _success) {
+		this._success = _success;
+	}
+	public Map<String, Object> getData() {
+		return data;
+	}
+	public void setData(Map<String, Object> data) {
+		this.data = data;
+	}
+	
+}

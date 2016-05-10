@@ -1,0 +1,469 @@
+package com.mobile.service.shangjianwang.dao.jdbc;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.jdbc.core.JdbcTemplate;
+
+import com.mobile.service.shangjianwang.dao.MeDao;
+import com.mobile.service.util.Check;
+import com.mobile.service.util.Convert;
+import com.mobile.service.util.Getnetmd5;
+
+public class MeDaoJdbc implements MeDao {
+
+	private JdbcTemplate jdbcTemplate;
+
+	public JdbcTemplate getJdbcTemplate() {
+		return jdbcTemplate;
+	}
+
+	public void setJdbcTemplate(JdbcTemplate jdbcTemplate) {
+		this.jdbcTemplate = jdbcTemplate;
+	}
+
+	private JdbcTemplate sqljdbcTemplate;
+
+	public JdbcTemplate getSqljdbcTemplate() {
+		return sqljdbcTemplate;
+	}
+
+	public void setSqljdbcTemplate(JdbcTemplate sqljdbcTemplate) {
+		this.sqljdbcTemplate = sqljdbcTemplate;
+	}
+
+	public Map<String, Object> login(String username, String pwd)
+			throws Exception {
+		Map<String, Object> mapdata = new HashMap<String, Object>();
+		String sql = "SELECT  id,[uname]FROM [shangjian_DB].[dbo].[Member] where Uname=? and Upass=?";
+		List<Map<String, Object>> listData = this.sqljdbcTemplate.queryForList(
+				sql, new Object[] { username, Getnetmd5.md5(pwd) });
+		if (listData != null && listData.size() > 0) {
+			mapdata = listData.get(0);
+		}
+		return mapdata;
+	}
+
+	public List<Map<String, Object>> getfreebooks(Map<String, Object> attrMap)
+			throws Exception {
+		List<Map<String, Object>> listData = null;
+		Integer limit = Convert.nullToInt(attrMap.get("limit"));
+		Integer offset = Convert.nullToInt(attrMap.get("offset"));
+		String attrStr = "";
+		if (attrMap.get("type") != null) {
+			attrStr = " and journal_type=" + attrMap.get("type");
+		}
+		// String sql = "select k.* from( select top "
+		// + limit
+		// + " i.* from ( select top "
+		// + (limit + offset)
+		// +
+		// " g.* from(select a.id,a.ThbTitle as title,a.author,case when b.pic_name is null then 'http://js-china.com.cn/UpLoadFiles/Images/802316c98f9344e884ffdbe453be98ce.jpg' else 'http://js-china.com.cn/UpLoadFiles/Images/'+b.pic_name end faceurl,a.description,a.press from News a left join (select MAX(pic_name) as pic_name,product_id   from [product_pic] group by product_id)b  on b.product_id=a.ID where a.is_pay=0 and title_ID=0) g order by ID )i order by ID desc) k order by id  ";
+		String sql = "select top "
+				+ limit
+				+ " a1.* from  (select a.id,a.ThbTitle as title,a.author,case when b.pic_name is null then "
+				+ "'http://js-china.com.cn/UpLoadFiles/Images/802316c98f9344e884ffdbe453be98ce.jpg' else"
+				+ " 'http://js-china.com.cn/UpLoadFiles/Images/'+b.pic_name end faceurl,a.description,a.press,case when journal_type is null then 15 else journal_type end journal_type from News "
+				+ "a left join (select MAX(pic_name) as pic_name,product_id   from [product_pic] group by product_id)b  on b.product_id=a.ID where a.is_pay=0 and "
+				+ "title_ID=0 and a.ParentID=3 "
+				+ attrStr
+				+ ") a1 where a1.id not in (select top "
+				+ offset
+				+ " g.id from(select a.id,a.ThbTitle as title,a.author,case when b.pic_name is null then "
+				+ "'http://js-china.com.cn/UpLoadFiles/Images/802316c98f9344e884ffdbe453be98ce.jpg' else "
+				+ "'http://js-china.com.cn/UpLoadFiles/Images/'+b.pic_name end faceurl,a.description,a.press,case when journal_type is null then 15 else journal_type end journal_type from News a left"
+				+ " join (select MAX(pic_name) as pic_name,product_id   from [product_pic] group by product_id)b  on b.product_id=a.ID where a.is_pay=0 and title_ID=0 and  a.ParentID=3 "
+				+ attrStr + ") " + "g order by ID) order by id  ";
+		listData = this.sqljdbcTemplate.queryForList(sql);
+		return listData;
+	}
+
+	public Long countfreebook(Map<String, Object> attrMap) throws Exception {
+		Long l = 0l;
+		try {
+
+			String sql = "select COUNT(*) as count from News a left join (select MAX(pic_name) as pic_name,product_id   from [product_pic] group by product_id)b on b.product_id=a.ID where a.is_pay=0 and title_ID=0  and  a.ParentID=3 ";
+			String attrStr = "";
+			if (attrMap.get("type") != null) {
+				attrStr = " and journal_type=" + attrMap.get("type");
+			}
+			Map<String, Object> map = this.sqljdbcTemplate.queryForMap(sql
+					+ attrStr);
+			l = Long.parseLong(map.get("count").toString());
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return l;
+	}
+
+	public List<Map<String, Object>> getbuyedbooks(Map<String, Object> attrMap)
+			throws Exception {
+		List<Map<String, Object>> listData = null;
+		Integer limit = Convert.nullToInt(attrMap.get("limit"));
+		Integer offset = Convert.nullToInt(attrMap.get("offset"));
+		String attrStr = "";
+		if (attrMap.get("type") != null) {
+			attrStr = " and journal_type=" + attrMap.get("type");
+		}
+		// String sql = "select k.* from( select top "
+		// + limit
+		// + "i.* from ( select top "
+		// + (limit + offset)
+		// +
+		// " g.* from(select a.id,a.ThbTitle as title,a.author,case when b.pic_name is "
+		// +
+		// "null then  'http://js-china.com.cn/UpLoadFiles/Images/802316c98f9344e884ffdbe453be98ce.jpg' else 'http://js-china.com.cn/UpLoadFiles/Images/'"
+		// +
+		// "+b.pic_name end faceurl,a.description, a.press from News a left join (select MAX(pic_name) as pic_name,product_id   from [product_pic] group by product_id)b  "
+		// +
+		// "on   b.product_id=a.ID  where a.ID in(select f.ProID from [dbo].[Order] o,[order_info] f where o.memberid="
+		// + attrMap.get("userid")
+		// +
+		// "  and (o.static=2 or o.static=3) and f.order_number=o.order_Number) ) g order by ID )i order by ID desc) k order by id  ";
+		String sql = "select top "
+				+ limit
+				+ " a1.* from  ( select a.id,a.ThbTitle as title,a.author,case when b.pic_name is null then "
+				+ "'http://js-china.com.cn/UpLoadFiles/Images/802316c98f9344e884ffdbe453be98ce.jpg' else "
+				+ "'http://js-china.com.cn/UpLoadFiles/Images/'+b.pic_name end faceurl,a.description, a.press,case when journal_type is null then 15 else journal_type end journal_type  from News a left join "
+				+ "(select MAX(pic_name) as pic_name,product_id   from [product_pic] group by product_id)b  on   b.product_id=a.ID  where a.ID "
+				+ "in(select f.ProID from [dbo].[Order] o,[order_info] f where o.memberid="
+				+ attrMap.get("userid")
+				+ "  and (o.static=2 or o.static=3) and f.order_number=o.order_Number) "
+				+ attrStr
+				+ " )"
+				+ " a1  where a1.id not in (select top "
+				+ offset
+				+ " g.id from( select a.id,a.ThbTitle as title,a.author,case when b.pic_name is null then "
+				+ "'http://js-china.com.cn/UpLoadFiles/Images/802316c98f9344e884ffdbe453be98ce.jpg'  else 'http://js-china.com.cn/UpLoadFiles/Images/'+b.pic_name end "
+				+ "faceurl,a.description, a.press,case when journal_type is null then 15 else journal_type end journal_type  from News a left join (select MAX(pic_name) as pic_name,product_id   from [product_pic] group by product_id)b  on   b.product_id=a.ID "
+				+ " where a.ID in(select f.ProID from [dbo].[Order] o,[order_info] f where o.memberid="
+				+ attrMap.get("userid")
+				+ "  and (o.static=2 or o.static=3) and f.order_number=o.order_Number)"
+				+ attrStr + " )  " + " g order by ID) order by id ";
+		listData = this.sqljdbcTemplate.queryForList(sql);
+		return listData;
+	}
+
+	public Long countbuyedbook(Map<String, Object> attrMap) throws Exception {
+		Long l = 0l;
+		String attrStr = "";
+		if (attrMap.get("type") != null) {
+			attrStr = " and journal_type=" + attrMap.get("type");
+		}
+		try {
+			String sql = "select  COUNT(*) as count from News a   where a.ID in(select f.ProID from [dbo].[Order] o,[order_info] f where o.memberid="
+					+ attrMap.get("userid")
+					+ "  and (o.static=2 or o.static=3) and f.order_number=o.order_Number "
+					+ attrStr + ") ";
+			Map<String, Object> map = this.sqljdbcTemplate.queryForMap(sql);
+			l = Long.parseLong(map.get("count").toString());
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return l;
+	}
+
+	public List<Map<String, Object>> getallcanreadbooks(
+			Map<String, Object> attrMap) throws Exception {
+		List<Map<String, Object>> listData = null;
+		Integer limit = Convert.nullToInt(attrMap.get("limit"));
+		Integer offset = Convert.nullToInt(attrMap.get("offset"));
+		String attrStr = "";
+		if (attrMap.get("type") != null) {
+			attrStr = " and journal_type=" + attrMap.get("type");
+		}
+		// String sql = "select k.* from( select top "
+		// + limit
+		// + " i.* from ( select top "
+		// + (limit + offset)
+		// +
+		// " g.* from(  select a.id,a.is_pay,a.ThbTitle as title,a.author,case when b.pic_name is null then  'http://js-china.com.cn/UpLoadFiles/Images/802316c98f9344e884ffdbe453be98ce.jpg'   else 'http://js-china.com.cn/UpLoadFiles/Images/'+b.pic_name end faceurl,a.description,a.press from News a left join(select MAX(pic_name) as pic_name,product_id   from [product_pic] group by product_id)b  on   b.product_id=a.ID  where (a.ID in(select f.ProID from [dbo].[Order] o,[order_info] f where o.memberid="
+		// + attrMap.get("userid")
+		// +
+		// "  and (o.static=2 or o.static=3) and f.order_number=o.order_Number) or ID in(select ID from News where title_ID=0 and is_pay=0))  ) g order by ID )i order by ID desc) k order by id  ";
+		// listData = this.sqljdbcTemplate.queryForList(sql);
+		// System.out.println(sql);
+		String sql = "select top "
+				+ limit
+				+ " a1.* from  (select a.id,a.is_pay,a.ThbTitle as title,a.author,case when b.pic_name is null then   'http://js-china.com.cn/UpLoadFiles/Images/802316c9"
+				+ "8f9344e884ffdbe453be98ce.jpg'   else 'http://js-china.com.cn/UpLoadFiles/Images/'+b.pic_name end faceurl,a.description,a.press,case when journal_type  is null then 15 else journal_type end journal_type  from News a left join(select MAX(pic_name) as pic_name,product_id   from [product_pic] group by product_id)b "
+				+ " on   b.product_id=a.ID  where (a.ID in(select f.ProID from [dbo].[Order] o,[order_info] f where o.memberid="
+				+ attrMap.get("userid")
+				+ "  and (o.static=2 or o.static=3) and f.order_number=o.order_Number) or ID in(select ID from News where title_ID=0 and is_pay=0  and  a.ParentID=3  ))  "
+				+ attrStr
+				+ ") a1 where a1.id not in (select top "
+				+ offset
+				+ " g.id from(select a.id,a.is_pay,a.ThbTitle as title,a.author,case when b.pic_name is null then   'http://js-china.com.cn/UpLoadFiles/Images/802316c98f9344e884ffdbe453be98ce.jpg'   else 'http://js-china.com.cn/UpLoadFiles/Images/'+b.pic_name end faceurl,a.description,a.press,case when journal_type is null then 15 else journal_type end journal_city  from News a left join(select MAX(pic_name) as pic_name,product_id   from [product_pic] group by product_id)b  on   b.product_id=a.ID  where (a.ID in(select f.ProID from [dbo].[Order] o,[order_info] f where o.memberid="
+				+ attrMap.get("userid")
+				+ "  and (o.static=2 or o.static=3) and f.order_number=o.order_Number) or ID in(select ID from News where title_ID=0 and is_pay=0 and  a.ParentID=3 ))"
+				+ attrStr + " )   g order by ID) order by id ";
+		listData = this.sqljdbcTemplate.queryForList(sql);
+		return listData;
+	}
+
+	public Long countcanreadbook(Map<String, Object> attrMap) throws Exception {
+		Long l = 0l;
+		String attrStr = "";
+		if (attrMap.get("type") != null) {
+			attrStr = " and journal_type=" + attrMap.get("type");
+		}
+		try {
+			String sql = "  select COUNT(*) as count from News a  where (a.ID in(select f.ProID from [dbo].[Order] o,[order_info] f where o.memberid="
+					+ attrMap.get("userid")
+					+ ""
+					+ "  and (o.static=2 or o.static=3) and f.order_number=o.order_Number) or ID in(select ID from News where title_ID=0 and is_pay=0  and  a.ParentID=3 ))"
+					+ attrStr + " ";
+			Map<String, Object> map = this.sqljdbcTemplate.queryForMap(sql);
+			l = Long.parseLong(map.get("count").toString());
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return l;
+	}
+
+	public List<Map<String, Object>> getbookcitybooks(
+			Map<String, Object> attrMap) throws Exception {
+		List<Map<String, Object>> listData = null;
+		Integer limit = Convert.nullToInt(attrMap.get("limit"));
+		Integer offset = Convert.nullToInt(attrMap.get("offset"));
+		String attrStr = "";
+		if (attrMap.get("type") != null) {
+			attrStr = " and journal_type=" + attrMap.get("type");
+		}
+		if (!Check.isEmpty(attrMap.get("userid"))) {
+			String sql = "select top "
+					+ limit
+					+ " a1.* from  (   select c.*,case when f.ProID is null then 0 else 1 end if_buy from (select a.id,a.is_pay,a.ThbTitle as title,"
+					+ " a.author,case when b.pic_name is null then 'http://js-china.com.cn/UpLoadFiles/Images/d95694e1823440bfbac1aaa9b6a943f5.jpg'  else  "
+					+ "'http://js-china.com.cn/UpLoadFiles/Images/'+b.pic_name end faceurl,a.description,a.press,case when journal_type  is null then 15 else journal_type end journal_type  from News a left   join  (select MAX(pic_name) "
+					+ "as pic_name,product_id from [product_pic] group by product_id)b on  b.product_id=a.ID where a.title_ID=0  and  a.ParentID=3  and   (a.ThbTitle like'%"
+					+ attrMap.get("key")
+					+ "%' or a.Description like'%"
+					+ attrMap.get("key")
+					+ "%')"
+					+ "  ) c left join (select e.ProID from [dbo].[Order] d,dbo.order_info e  where d.memberid="
+					+ attrMap.get("userid")
+					+ "   and d.order_Number=e.order_number and (d.static=3 or d.static=2)) f"
+					+ " on c.ID=f.ProID "
+					+ attrStr
+					+ " ) a1 where a1.id not in (select top "
+					+ offset
+					+ " g.id from(    select c.*,case when f.ProID is null then 0 else 1 end if_buy from "
+					+ "(select a.id,a.is_pay,a.ThbTitle as title, a.author,case when b.pic_name is null then "
+					+ "'http://js-china.com.cn/UpLoadFiles/Images/d95694e1823440bfbac1aaa9b6a943f5.jpg'  else  "
+					+ "'http://js-china.com.cn/UpLoadFiles/Images/'+b.pic_name end faceurl,a.description,a.press,case when journal_type  is null then 15 else journal_type end journal_type  from News a left   join  (select MAX(pic_name) as pic_name,"
+					+ "product_id from [product_pic] group by product_id)b on  b.product_id=a.ID where a.title_ID=0  and  a.ParentID=3  and   (a.ThbTitle like'%"
+					+ attrMap.get("key")
+					+ "%' or a.Description like'%"
+					+ attrMap.get("key")
+					+ "%')  ) c"
+					+ " left join (select e.ProID from [dbo].[Order] d,dbo.order_info e  where d.memberid="
+					+ attrMap.get("userid")
+					+ "   and d.order_Number=e.order_number and (d.static=3 or d.static=2)) f "
+					+ "on c.ID=f.ProID " + attrStr
+					+ "  )   g order by ID) order by id ";
+			listData = this.sqljdbcTemplate.queryForList(sql);
+		} else {
+			String sql = "select top "
+					+ limit
+					+ " a1.* from  (select a.id,a.ThbTitle as title,a.author,case when b.pic_name is null then 'http://js-china.com.cn/UpLoadFiles/Images/802316c98f9344e884ffdbe453be98ce.jpg' else 'http://js-china.com.cn/UpLoadFiles/Images/'+b.pic_name end faceurl,a.description,a.press,a.is_pay,0 as if_buy from News a left join (select MAX(pic_name) as pic_name,product_id   from [product_pic] group by product_id)b on b.product_id=a.ID where  title_ID=0  and  a.ParentID=3 and (a.ThbTitle like'%"
+					+ attrMap.get("key")
+					+ "%' or a.Description like'%"
+					+ attrMap.get("key")
+					+ "%') "
+					+ attrStr
+					+ ") a1 where a1.id not in (select top "
+					+ offset
+					+ " g.id from( select a.id,a.ThbTitle as title,a.author,case when b.pic_name is null then 'http://js-china.com.cn/UpLoadFiles/Images/802316c98f9344e884ffdbe453be98ce.jpg' else 'http://js-china.com.cn/UpLoadFiles/Images/'+b.pic_name end faceurl,a.description,a.press,a.is_pay,0 as if_buy from News a left join (select MAX(pic_name) as pic_name,product_id   from [product_pic] group by product_id)b on b.product_id=a.ID where  title_ID=0  and  a.ParentID=3 and  (a.ThbTitle like'%"
+					+ attrMap.get("key") + "%' or a.Description like'%"
+					+ attrMap.get("key") + "%') " + attrStr
+					+ ")   g order by ID) order by id ";
+			listData = this.sqljdbcTemplate.queryForList(sql);
+		}
+
+		return listData;
+	}
+
+	public Long countbookcitybook(Map<String, Object> attrMap) throws Exception {
+		Long l = 0l;
+		String attrStr = "";
+		if (attrMap.get("type") != null) {
+			attrStr = " and journal_type=" + attrMap.get("type");
+		}
+		try {
+			if (!Check.isEmpty(attrMap.get("userid"))) {
+				String sql = " select count(*) as count from (select c.*,case when f.ProID is null then 0 else 1 end if_buy from (select a.title_ID,a.id,a.is_pay,a.ThbTitle as title,"
+						+ " a.author,case when b.pic_name is null then 'http://js-china.com.cn/UpLoadFiles/Images/d95694e1823440bfbac1aaa9b6a943f5.jpg'  else "
+						+ "'http://js-china.com.cn/UpLoadFiles/Images/'+b.pic_name end faceurl,a.description,a.press from News a left   join (select MAX(pic_name)"
+						+ " as pic_name,product_id from [product_pic] group by product_id)b on  b.product_id=a.ID where a.title_ID=0  and  a.ParentID=3  and (a.ThbTitle like'%"
+						+ attrMap.get("key")
+						+ "%' or a.Description like'%"
+						+ attrMap.get("key")
+						+ "%') "
+						+ attrStr
+						+ " ) c left join (select e.ProID from [dbo].[Order] "
+						+ "d,dbo.order_info e  where d.memberid="
+						+ attrMap.get("userid")
+						+ " and d.order_Number=e.order_number and (d.static=3 or d.static=2)) f on c.ID=f.ProID ) h";
+				Map<String, Object> map = this.sqljdbcTemplate.queryForMap(sql);
+				l = Long.parseLong(map.get("count").toString());
+			} else {
+				String sql = " select count(*) as count from (select a.id,a.ThbTitle as title,a.author,case when b.pic_name is null then "
+						+ "'http://js-china.com.cn/UpLoadFiles/Images/802316c98f9344e884ffdbe453be98ce.jpg' else"
+						+ " 'http://js-china.com.cn/UpLoadFiles/Images/'+b.pic_name end faceurl,a.description,a.press,a.is_pay,0 as if_buy from News a "
+						+ "left join (select MAX(pic_name) as pic_name,product_id   from [product_pic] group by product_id)b on b.product_id=a.ID where  "
+						+ "title_ID=0  and  a.ParentID=3 and (a.ThbTitle like'%"
+						+ attrMap.get("key")
+						+ "%' or a.Description like'%"
+						+ attrMap.get("key") + "%') " + attrStr + " ) h";
+				Map<String, Object> map = this.sqljdbcTemplate.queryForMap(sql);
+				l = Long.parseLong(map.get("count").toString());
+			}
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return l;
+	}
+
+	public List<Map<String, Object>> getbookdetailbyid(
+			Map<String, Object> attrMap) throws Exception {
+		List<Map<String, Object>> listzhang = new ArrayList<Map<String, Object>>();
+		List<Map<String, Object>> listzhang2 = new ArrayList<Map<String, Object>>();
+		String sql1 = "SELECT  [id],[ThbTitle] as title FROM [shangjian_DB].[dbo].[News] b where b.title_ID=? order by b.Taxis";
+		String sql2 = "SELECT  [pic_id],[orderby],'http://js-china.com.cn/UpLoadFiles/Images/'+[pic_name] as page FROM [shangjian_DB].[dbo].[product_pic] p where p.product_id=? order by p.[orderby]";
+		listzhang = this.sqljdbcTemplate.queryForList(sql1,
+				new Object[] { attrMap.get("id") });
+		if (listzhang != null && listzhang.size() > 0) {
+			for (int j = 0; j < listzhang.size(); j++) {
+				listzhang2 = this.sqljdbcTemplate.queryForList(sql2,
+						new Object[] { listzhang.get(j).get("id") });
+				listzhang.get(j).put("zhang", listzhang2);
+			}
+		}
+		return listzhang;
+	}
+
+	@Override
+	public List<Map<String, Object>> getbooktypes() throws Exception {
+		// TODO Auto-generated method stub
+		List<Map<String, Object>> data = new ArrayList<Map<String, Object>>();
+		String sql = "SELECT [ID] as id,[Node_Name] as name   FROM  Node_Tree where ParentID=14";
+		data = this.sqljdbcTemplate.queryForList(sql);
+		return data;
+	}
+
+	@Override
+	public Map<String, Object> getuserinfobyc(Map<String, Object> attrMap)
+			throws Exception {
+		// TODO Auto-generated method stub
+		Map<String, Object> map = new HashMap<String, Object>();
+		String sql = "SELECT  [ID] as id,[Uname] as uname,[Tell] as tell,[Email] as email  FROM   [Member] where ID=?";
+		List<Map<String, Object>> listdata = this.sqljdbcTemplate.queryForList(
+				sql, new Object[] { attrMap.get("userid") });
+		if (listdata != null && listdata.size() > 0) {
+			return listdata.get(0);
+		} else {
+			return map;
+		}
+
+	}
+
+	@Override
+	public List<Map<String, Object>> getupaiedsbyc(Map<String, Object> attrMap)
+			throws Exception {
+		// TODO Auto-generated method stub
+		Integer limit = Convert.nullToInt(attrMap.get("limit"));
+		Integer offset = Convert.nullToInt(attrMap.get("offset"));
+		String sql=" select top "+limit+" a1.* from( SELECT l.[id] as id,l.Name as name,l.Start_Price as price,a.[Retention_Price] as retention_price,a.[Retention_Time] " +
+				"as retention_time,'http://js-china.com.cn/UpLoadFiles/images/'+p.pic_name  as pic_name,l.Description as description  FROM  [Orders] a,[Lot] l,(select MAX(pic_name) as pic_name,product_id,img_type   from" +
+				" [product_pic] group by product_id,img_type)p where a.MemberID="+attrMap.get("userid")+" and a.LotID=l.id and p.img_type=1 and p.product_id=l.id  ) a1 where a1.id not in" +
+				" (select top "+offset+" a2.id from(SELECT l.[id] as id,l.Name as name,l.Start_Price as price,a.[Retention_Price] as retention_price,a.[Retention_Time] as " +
+				"retention_time,'http://js-china.com.cn/UpLoadFiles/images/'+p.pic_name  as pic_name,l.Description as description  FROM  [Orders] a,[Lot] l,(select MAX(pic_name) as pic_name,product_id,img_type   from [product_pic] " +
+				"group by product_id,img_type)p where a.MemberID="+attrMap.get("userid")+" and a.LotID=l.id and p.img_type=1 and p.product_id=l.id ) a2 order by a2.id) order by id"; 
+//		String sql = "SELECT l.[id] as id,l.Name as name,l.Start_Price as price,a.[Retention_Price] as retention_price,a.[Retention_Time] as retention_price,p.pic_name,l.Description as description  FROM  [Orders] a,[Lot] l,product_pic p where MemberID=? and a.LotID=l.id and p.img_type=1 and p.product_id=l.id";
+		List<Map<String,Object>> list=this.sqljdbcTemplate.queryForList(sql);
+		return list;
+	}
+
+	@Override
+	public Long paidcount(Map<String, Object> attrMap) throws Exception {
+		// TODO Auto-generated method stub
+		String sql="SELECT COUNT(*) as count  FROM  [Orders] a,[Lot] l,(select MAX(pic_name) as pic_name,product_id,img_type   from [product_pic] group by product_id,img_type)p where a.MemberID=? and a.LotID=l.id and p.img_type=1 and p.product_id=l.id  ";
+		Long count=0l;
+		List<Map<String,Object>> list=this.sqljdbcTemplate.queryForList(sql,new Object[]{attrMap.get("userid")});
+		if (list!=null&&list.size()>0) {
+			count=Long.parseLong(list.get(0).get("count").toString());
+		}
+		return count;
+	}
+
+	@Override
+	public Boolean checkPwd(Map<String, Object> attrMap) throws Exception {
+		// TODO Auto-generated method stub
+		Boolean b=false;
+		try {
+			String sql="SELECT  id,[uname]FROM [shangjian_DB].[dbo].[Member] where id=? and Upass=?";
+			String strPwd=Getnetmd5.md5(attrMap.get("oldpwd").toString());
+			List<Map<String,Object>> list=this.sqljdbcTemplate.queryForList(sql,new Object[]{attrMap.get("userid"),strPwd});
+			if (list!=null&&list.size()>0) {
+				b=true;
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return b;
+	}
+
+	@Override
+	public Boolean updatauserinfo(Map<String, Object> attrMap) throws Exception {
+		Boolean b=false;
+		String sortStr="";
+		Boolean isFirst=true;
+//		if (attrMap.get("uname")!=null) {
+//			sortStr+="[Uname] = ";
+//			sortStr+=attrMap.get("uname");
+//			isFirst=false;
+//		}
+		if (attrMap.get("tell")!=null) {
+			if (isFirst) {
+				isFirst=false;	
+			}else {
+				sortStr+=",";
+			}
+			sortStr+="Tell='";
+			sortStr+=attrMap.get("tell")+"'";
+		}
+		if (attrMap.get("email")!=null) {
+			if (isFirst) {
+				isFirst=false;	
+			}else {
+				sortStr+=",";
+			}
+			sortStr+="Email='";
+			sortStr+=attrMap.get("email")+"'";
+		}
+		if (attrMap.get("pwd")!=null) {
+			if (isFirst) {
+				isFirst=false;	
+			}else {
+				sortStr+=",";
+			}
+			sortStr+="Upass='";
+			String strPwd=Getnetmd5.md5(attrMap.get("pwd").toString());
+			sortStr+=strPwd+"'";
+		}
+		StringBuilder sql=new StringBuilder(); 
+		sql.append("UPDATE Member SET "+sortStr+" WHERE ID= "+attrMap.get("userid"));
+		try {
+			this.sqljdbcTemplate.update(sql.toString());
+			b=true;
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return b;
+	}
+
+}

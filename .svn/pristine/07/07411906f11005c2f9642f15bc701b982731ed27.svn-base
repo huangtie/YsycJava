@@ -1,0 +1,715 @@
+package com.mobile.service.shangjianwang.action;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import com.mobile.service.base.CommonJson;
+import com.mobile.service.base.ListJson;
+import com.mobile.service.base.MapJson;
+import com.mobile.service.shangjianwang.service.impl.MeServiceImpl;
+import com.mobile.service.util.Aes;
+import com.mobile.service.util.Check;
+import com.mobile.service.util.Constants;
+import com.mobile.service.util.Convert;
+
+@Controller
+public class MeController {
+
+	private MeServiceImpl meService;
+
+	public MeServiceImpl getMeService() {
+		return meService;
+	}
+
+	public void setMeService(MeServiceImpl meService) {
+		this.meService = meService;
+	}
+
+	/**
+	 * 2.1.10. 更新用户信息
+	 * 
+	 * @author xjch
+	 * @param request
+	 * @param session
+	 * @return
+	 */
+	@RequestMapping(value = "/updatauserinfo")
+	public @ResponseBody
+	CommonJson updatauserinfo(HttpServletRequest request, HttpSession session) {
+		CommonJson json = new CommonJson();
+		json.set_success(false);
+		// 模板头开始
+		try {
+			Map<String, Object> attrMap = new HashMap<String, Object>();
+
+			String c = request.getParameter("c");
+			if (!Check.isEmpty(c)) {
+				// 解析C，解析出登陆时间和用户名，如果登陆时间超过规定时间，便提示从新登陆，解析出的用户名用来获取详细信息
+				String enString = Aes.Decrypt(c, Constants.ENCODE_KEY);
+				String[] temp = Convert.cToUserId(enString);
+				if (Convert.dateThan(temp[1])) {
+					// 模板头结束
+					// 获取有多少本书
+					attrMap.put("userid", temp[0]);
+//					if (request.getParameter("uname") != null) {
+//						attrMap.put("attrMap", request.getParameter("uname"));
+//					}
+					if (request.getParameter("tell") != null) {
+						attrMap.put("tell", request.getParameter("tell"));
+					}
+					if (request.getParameter("email") != null) {
+						attrMap.put("email", request.getParameter("email"));
+					}
+					if (request.getParameter("pwd") != null) {
+						if (request.getParameter("oldpwd") != null) {
+							attrMap.put("oldpwd",
+									request.getParameter("oldpwd"));
+							if (!meService.checkPwd(attrMap)) {
+								json.setError_msg("旧密码不正确");
+								json.set_success(false);
+								return json;
+							}
+						} else {
+							json.setError_msg("旧密码不能为空");
+							json.set_success(false);
+							return json;
+						}
+						attrMap.put("pwd", request.getParameter("pwd"));
+
+					}
+					Boolean b = meService.updatauserinfo(attrMap);
+					json.set_success(b);
+					// 模板尾开始
+				} else {
+					json.setError_msg("session超期或用户已经被删除");
+					json.set_success(false);
+				}
+			} else {
+				json.setError_msg("请先登录");
+				json.set_success(false);
+			}
+		} catch (Exception e) {
+			if (e.getClass().getName()
+					.equals("javax.crypto.IllegalBlockSizeException")
+					|| e.getClass().getName()
+							.equals("java.lang.IllegalArgumentException")) { //
+				String error_msg = "登陆标志出错";
+				json.setError_msg(error_msg);
+				json.set_success(false);
+			} else {
+				String error_msg = "操作失败";
+				json.setError_msg(error_msg);
+				json.set_success(false);
+			}
+		}
+		return json;
+	}
+
+	/**
+	 * 用户登录
+	 * 
+	 * @author xjch
+	 * @param request
+	 * @param session
+	 * @return
+	 */
+	@RequestMapping(value = "/login")
+	public @ResponseBody
+	MapJson accountLogin(HttpServletRequest request, HttpSession session) {
+		MapJson json = new MapJson();
+		json.set_success(false);
+		try {
+
+			String userName = request.getParameter("_user_name");
+			String userPwd = request.getParameter("_pwd");
+			if (!Check.isEmpty(userName)) {
+				if (!Check.isEmpty(userPwd)) {
+					Map<String, Object> data = meService.login(userName,
+							userPwd);
+					if (data != null && data.size() > 0) {
+						json.setData(data);
+						json.set_success(true);
+					} else {
+						String error_msg = "用户名或密码不对";
+						json.setError_msg(error_msg);
+						json.set_success(false);
+					}
+
+				} else {
+					json.setError_msg("密码不能为空");
+					json.set_success(false);
+				}
+			} else {
+				json.setError_msg("用户名不能为空");
+				json.set_success(false);
+			}
+		} catch (NullPointerException e) {
+			json.setError_msg("用户名不存在或密码错误");
+			json.set_success(false);
+		} catch (Exception e) {
+			if (e.getClass().getName()
+					.equals("javax.crypto.IllegalBlockSizeException")
+					|| e.getClass().getName()
+							.equals("java.lang.IllegalArgumentException")) { //
+				String error_msg = "登陆标志出错";
+				json.setError_msg(error_msg);
+				json.set_success(false);
+			} else {
+				e.printStackTrace();
+				String error_msg = "登陆失败";
+				json.setError_msg(error_msg);
+				json.set_success(false);
+			}
+
+		}
+		return json;
+	}
+
+	/**
+	 * 获取免费图书
+	 * 
+	 * @author xjch
+	 * @param request
+	 * @param session
+	 * @return
+	 */
+	@RequestMapping(value = "/getfreebooks")
+	public @ResponseBody
+	ListJson getfreebooks(HttpServletRequest request, HttpSession session) {
+		ListJson json = new ListJson();
+		json.set_success(false);
+		// 模板头开始
+		try {
+			Map<String, Object> attrMap = new HashMap<String, Object>();
+			Integer offset = 0;
+			if (!Check.isEmpty(request.getParameter("offset"))) {
+				offset = Integer.parseInt(request.getParameter("offset"));
+			}
+			attrMap.put("offset", offset);
+			Integer limit = Constants.pageSize;
+			if (!Check.isEmpty(request.getParameter("limit"))) {
+				limit = Integer.parseInt(request.getParameter("limit"));
+			}
+			attrMap.put("limit", limit);
+			// 获取类别参数
+			Integer type = 0;
+			if (request.getParameter("type") != null) {
+				try {
+					type = Integer.parseInt(request.getParameter("type"));
+					attrMap.put("type", type);
+				} catch (Exception e) {
+					json.setError_msg("图书类别参数类型错误");
+					json.set_success(false);
+					return json;
+				}
+
+			}
+			// 模板头结束
+			// 获取有多少本书
+			Long l = meService.countfreebook(attrMap);
+			// 获取所有的数据
+			List<Map<String, Object>> data = meService.getfreebooks(attrMap);
+			json.setData(data);
+			json.setCount(l);
+			json.set_success(true);
+			// 模板尾开始
+		} catch (Exception e) {
+			if (e.getClass().getName()
+					.equals("javax.crypto.IllegalBlockSizeException")
+					|| e.getClass().getName()
+							.equals("java.lang.IllegalArgumentException")) { //
+				String error_msg = "登陆标志出错";
+				json.setError_msg(error_msg);
+				json.set_success(false);
+			} else {
+				String error_msg = "操作失败";
+				json.setError_msg(error_msg);
+				json.set_success(false);
+			}
+		}
+		return json;
+	}
+
+	/**
+	 * 获取已购图书
+	 * 
+	 * @author xjch
+	 * @param request
+	 * @param session
+	 * @return
+	 */
+	@RequestMapping(value = "/getbuyedbooks")
+	public @ResponseBody
+	ListJson getbuyedbooks(HttpServletRequest request, HttpSession session) {
+		ListJson json = new ListJson();
+		json.set_success(false);
+		// 模板头开始
+		try {
+			Map<String, Object> attrMap = new HashMap<String, Object>();
+			Integer offset = 0;
+			if (!Check.isEmpty(request.getParameter("offset"))) {
+				offset = Integer.parseInt(request.getParameter("offset"));
+			}
+			attrMap.put("offset", offset);
+			Integer limit = Constants.pageSize;
+			if (!Check.isEmpty(request.getParameter("limit"))) {
+				limit = Integer.parseInt(request.getParameter("limit"));
+			}
+			attrMap.put("limit", limit);
+			// 获取类别参数
+			Integer type = 0;
+			if (request.getParameter("type") != null) {
+				try {
+					type = Integer.parseInt(request.getParameter("type"));
+					attrMap.put("type", type);
+				} catch (Exception e) {
+					json.setError_msg("图书类别参数类型错误");
+					json.set_success(false);
+					return json;
+				}
+
+			}
+			String c = request.getParameter("c");
+			if (!Check.isEmpty(c)) {
+				// 解析C，解析出登陆时间和用户名，如果登陆时间超过规定时间，便提示从新登陆，解析出的用户名用来获取详细信息
+				String enString = Aes.Decrypt(c, Constants.ENCODE_KEY);
+				String[] temp = Convert.cToUserId(enString);
+				if (Convert.dateThan(temp[1])) {
+					// 模板头结束
+					// 获取有多少本书
+					attrMap.put("userid", temp[0]);
+					Long l = meService.countbuyedbook(attrMap);
+
+					// 获取所有的数据
+					List<Map<String, Object>> data = meService
+							.getbuyedbooks(attrMap);
+					json.setData(data);
+					json.setCount(l);
+					json.set_success(true);
+					// 模板尾开始
+				} else {
+					json.setError_msg("session超期或用户已经被删除");
+					json.set_success(false);
+				}
+			} else {
+				json.setError_msg("请先登录");
+				json.set_success(false);
+			}
+		} catch (Exception e) {
+			if (e.getClass().getName()
+					.equals("javax.crypto.IllegalBlockSizeException")
+					|| e.getClass().getName()
+							.equals("java.lang.IllegalArgumentException")) { //
+				String error_msg = "登陆标志出错";
+				json.setError_msg(error_msg);
+				json.set_success(false);
+			} else {
+				String error_msg = "操作失败";
+				json.setError_msg(error_msg);
+				json.set_success(false);
+			}
+		}
+		return json;
+	}
+
+	/**
+	 * 获取所有能看得书（包括免费的和已购的）
+	 * 
+	 * @author xjch
+	 * @param request
+	 * @param session
+	 * @return
+	 */
+	@RequestMapping(value = "/getallcanreadbooks")
+	public @ResponseBody
+	ListJson getallcanreadbooks(HttpServletRequest request, HttpSession session) {
+		ListJson json = new ListJson();
+		json.set_success(false);
+		// 模板头开始
+		try {
+			Map<String, Object> attrMap = new HashMap<String, Object>();
+			Integer offset = 0;
+			if (!Check.isEmpty(request.getParameter("offset"))) {
+				offset = Integer.parseInt(request.getParameter("offset"));
+			}
+			attrMap.put("offset", offset);
+			Integer limit = Constants.pageSize;
+			if (!Check.isEmpty(request.getParameter("limit"))) {
+				limit = Integer.parseInt(request.getParameter("limit"));
+			}
+			attrMap.put("limit", limit);
+			// 获取类别参数
+			Integer type = 0;
+			if (request.getParameter("type") != null) {
+				try {
+					type = Integer.parseInt(request.getParameter("type"));
+					attrMap.put("type", type);
+				} catch (Exception e) {
+					json.setError_msg("图书类别参数类型错误");
+					json.set_success(false);
+					return json;
+				}
+
+			}
+			String c = request.getParameter("c");
+			if (!Check.isEmpty(c)) {
+				// 解析C，解析出登陆时间和用户名，如果登陆时间超过规定时间，便提示从新登陆，解析出的用户名用来获取详细信息
+				String enString = Aes.Decrypt(c, Constants.ENCODE_KEY);
+				String[] temp = Convert.cToUserId(enString);
+				if (Convert.dateThan(temp[1])) {
+					// 模板头结束
+					// 获取有多少本书
+					Long l = meService.countcanreadbook(attrMap);
+					attrMap.put("userid", temp[0]);
+					// 获取所有的数据
+					List<Map<String, Object>> data = meService
+							.getallcanreadbooks(attrMap);
+					json.setData(data);
+					json.setCount(l);
+					json.set_success(true);
+
+					// 模板尾开始
+				} else {
+					json.setError_msg("session超期或用户已经被删除");
+					json.set_success(false);
+				}
+			} else {
+				// 只获取免费的
+				Long l = meService.countfreebook(attrMap);
+				// 获取所有的数据
+				List<Map<String, Object>> data = meService
+						.getfreebooks(attrMap);
+				json.setData(data);
+				json.setCount(l);
+				json.set_success(true);
+			}
+		} catch (Exception e) {
+			if (e.getClass().getName()
+					.equals("javax.crypto.IllegalBlockSizeException")
+					|| e.getClass().getName()
+							.equals("java.lang.IllegalArgumentException")) { //
+				String error_msg = "登陆标志出错";
+				json.setError_msg(error_msg);
+				json.set_success(false);
+			} else {
+				String error_msg = "操作失败";
+				json.setError_msg(error_msg);
+				json.set_success(false);
+			}
+		}
+		return json;
+	}
+
+	/**
+	 * 2.1.5. 获取书城书的列表包括根据关键字搜索列表
+	 * 
+	 * @author xjch
+	 * @param request
+	 * @param session
+	 * @return
+	 */
+	@RequestMapping(value = "/getbookcitybooks")
+	public @ResponseBody
+	ListJson getbookcitybooks(HttpServletRequest request, HttpSession session) {
+		ListJson json = new ListJson();
+		json.set_success(false);
+		// 模板头开始
+		try {
+			Map<String, Object> attrMap = new HashMap<String, Object>();
+			Integer offset = 0;
+			if (!Check.isEmpty(request.getParameter("offset"))) {
+				offset = Integer.parseInt(request.getParameter("offset"));
+			}
+			attrMap.put("offset", offset);
+			Integer limit = Constants.pageSize;
+			if (!Check.isEmpty(request.getParameter("limit"))) {
+				limit = Integer.parseInt(request.getParameter("limit"));
+			}
+			attrMap.put("limit", limit);
+			// 获取类别参数
+			Integer type = 0;
+			if (request.getParameter("type") != null) {
+				try {
+					type = Integer.parseInt(request.getParameter("type"));
+					attrMap.put("type", type);
+				} catch (Exception e) {
+					json.setError_msg("图书类别参数类型错误");
+					json.set_success(false);
+					return json;
+				}
+
+			}
+			String key = request.getParameter("key");
+			attrMap.put("key", Convert.toUtf8(Convert.nullToString(key)));
+			// attrMap.put("key",key);
+			String c = request.getParameter("c");
+			if (!Check.isEmpty(c)) {
+				// 解析C，解析出登陆时间和用户名，如果登陆时间超过规定时间，便提示从新登陆，解析出的用户名用来获取详细信息
+				String enString = Aes.Decrypt(c, Constants.ENCODE_KEY);
+				String[] temp = Convert.cToUserId(enString);
+				// 模板头结束
+				// 获取有多少本书
+				attrMap.put("userid", temp[0]);
+			}
+			Long l = meService.countbookcitybook(attrMap);
+
+			// 获取所有的数据
+			List<Map<String, Object>> data = meService
+					.getbookcitybooks(attrMap);
+			json.setData(data);
+			json.setCount(l);
+			json.set_success(true);
+			// 模板尾开始
+
+		} catch (Exception e) {
+			if (e.getClass().getName()
+					.equals("javax.crypto.IllegalBlockSizeException")
+					|| e.getClass().getName()
+							.equals("java.lang.IllegalArgumentException")) { //
+				String error_msg = "登陆标志出错";
+				json.setError_msg(error_msg);
+				json.set_success(false);
+			} else {
+				String error_msg = "操作失败";
+				json.setError_msg(error_msg);
+				json.set_success(false);
+			}
+		}
+		return json;
+	}
+
+	/**
+	 * 2.1.6. 跟据书id获取每本书的详细章节
+	 * 
+	 * @author xjch
+	 * @param request
+	 * @param session
+	 * @return
+	 */
+	@RequestMapping(value = "/getbookdetailbyid")
+	public @ResponseBody
+	ListJson getbookdetailbyid(HttpServletRequest request, HttpSession session) {
+		ListJson json = new ListJson();
+		json.set_success(false);
+		// 模板头开始
+		try {
+			Map<String, Object> attrMap = new HashMap<String, Object>();
+			String c = request.getParameter("c");
+			String id = request.getParameter("id");
+			if (!Check.isEmpty(id)) {
+				// 解析C，解析出登陆时间和用户名，如果登陆时间超过规定时间，便提示从新登陆，解析出的用户名用来获取详细信息
+				attrMap.put("id", id);
+				// 获取所有的数据
+				List<Map<String, Object>> data = meService
+						.getbookdetailbyid(attrMap);
+				json.setData(data);
+				json.setCount(Long.parseLong(data.size() + ""));
+				json.set_success(true);
+
+			} else {
+				json.setError_msg("id不能为空");
+				json.set_success(false);
+			}
+			// 模板尾开始
+
+		} catch (Exception e) {
+			if (e.getClass().getName()
+					.equals("javax.crypto.IllegalBlockSizeException")
+					|| e.getClass().getName()
+							.equals("java.lang.IllegalArgumentException")) { //
+				String error_msg = "登陆标志出错";
+				json.setError_msg(error_msg);
+				json.set_success(false);
+			} else {
+				String error_msg = "操作失败";
+				json.setError_msg(error_msg);
+				json.set_success(false);
+			}
+		}
+		return json;
+	}
+
+	/**
+	 * 2.1.7. 获取书籍类型 新增
+	 * 
+	 * @author xjch
+	 * @param request
+	 * @param session
+	 * @return
+	 */
+	@RequestMapping(value = "/getbooktypes")
+	public @ResponseBody
+	ListJson getbooktypes(HttpServletRequest request, HttpSession session) {
+		ListJson json = new ListJson();
+		json.set_success(false);
+		// 模板头开始
+		try {
+			Map<String, Object> attrMap = new HashMap<String, Object>();
+			Integer offset = 0;
+			if (!Check.isEmpty(request.getParameter("offset"))) {
+				offset = Integer.parseInt(request.getParameter("offset"));
+			}
+			attrMap.put("offset", offset);
+			Integer limit = Constants.pageSize;
+			if (!Check.isEmpty(request.getParameter("limit"))) {
+				limit = Integer.parseInt(request.getParameter("limit"));
+			}
+			attrMap.put("limit", limit);
+			// 获取所有的数据
+			List<Map<String, Object>> data = meService.getbooktypes();
+			json.setData(data);
+			json.setCount(Long.valueOf(data.size()));
+			json.set_success(true);
+
+			// 模板尾开始
+
+		} catch (Exception e) {
+			if (e.getClass().getName()
+					.equals("javax.crypto.IllegalBlockSizeException")
+					|| e.getClass().getName()
+							.equals("java.lang.IllegalArgumentException")) { //
+				String error_msg = "登陆标志出错";
+				json.setError_msg(error_msg);
+				json.set_success(false);
+			} else {
+				String error_msg = "操作失败";
+				json.setError_msg(error_msg);
+				json.set_success(false);
+			}
+		}
+		return json;
+	}
+
+	/**
+	 * 2.1.8. 根据登录标志获取个人详细资料
+	 * 
+	 * @author xjch
+	 * @param request
+	 * @param session
+	 * @return
+	 */
+	@RequestMapping(value = "/getuserinfobyc")
+	public @ResponseBody
+	MapJson getuserinfobyc(HttpServletRequest request, HttpSession session) {
+		MapJson json = new MapJson();
+		json.set_success(false);
+		// 模板头开始
+		try {
+			Map<String, Object> attrMap = new HashMap<String, Object>();
+			String c = request.getParameter("c");
+			if (!Check.isEmpty(c)) {
+				// 解析C，解析出登陆时间和用户名，如果登陆时间超过规定时间，便提示从新登陆，解析出的用户名用来获取详细信息
+				String enString = Aes.Decrypt(c, Constants.ENCODE_KEY);
+				String[] temp = Convert.cToUserId(enString);
+				if (Convert.dateThan(temp[1])) {
+					// 模板头结束
+					attrMap.put("userid", temp[0]);
+
+					// 获取所有的数据
+					Map<String, Object> data = meService
+							.getuserinfobyc(attrMap);
+					json.setData(data);
+					json.set_success(true);
+					// 模板尾开始
+				} else {
+					json.setError_msg("session超期或用户已经被删除");
+					json.set_success(false);
+				}
+			} else {
+				json.setError_msg("请先登录");
+				json.set_success(false);
+			}
+		} catch (Exception e) {
+			if (e.getClass().getName()
+					.equals("javax.crypto.IllegalBlockSizeException")
+					|| e.getClass().getName()
+							.equals("java.lang.IllegalArgumentException")) { //
+				String error_msg = "登陆标志出错";
+				json.setError_msg(error_msg);
+				json.set_success(false);
+			} else {
+				String error_msg = "操作失败";
+				json.setError_msg(error_msg);
+				json.set_success(false);
+			}
+		}
+		return json;
+	}
+
+	/**
+	 * 2.1.9. 根据登录标志获取已拍作品
+	 * 
+	 * @author xjch
+	 * @param request
+	 * @param session
+	 * @return
+	 */
+	@RequestMapping(value = "/getupaiedsbyc")
+	public @ResponseBody
+	ListJson getupaiedsbyc(HttpServletRequest request, HttpSession session) {
+		ListJson json = new ListJson();
+		json.set_success(false);
+		// 模板头开始
+		try {
+			Map<String, Object> attrMap = new HashMap<String, Object>();
+			Integer offset = 0;
+			if (!Check.isEmpty(request.getParameter("offset"))) {
+				offset = Integer.parseInt(request.getParameter("offset"));
+			}
+			attrMap.put("offset", offset);
+			Integer limit = Constants.pageSize;
+			if (!Check.isEmpty(request.getParameter("limit"))) {
+				limit = Integer.parseInt(request.getParameter("limit"));
+			}
+			attrMap.put("limit", limit);
+			String c = request.getParameter("c");
+			if (!Check.isEmpty(c)) {
+				// 解析C，解析出登陆时间和用户名，如果登陆时间超过规定时间，便提示从新登陆，解析出的用户名用来获取详细信息
+				String enString = Aes.Decrypt(c, Constants.ENCODE_KEY);
+				String[] temp = Convert.cToUserId(enString);
+				if (Convert.dateThan(temp[1])) {
+					// 模板头结束
+					attrMap.put("userid", temp[0]);
+
+					// 获取所有的数据
+					List<Map<String, Object>> list = meService
+							.getupaiedsbyc(attrMap);
+					// 获取一共有多少个
+					Long paidCount = meService.paidcount(attrMap);
+					json.setData(list);
+					json.setCount(paidCount);
+					json.set_success(true);
+					// 模板尾开始
+				} else {
+					json.setError_msg("session超期或用户已经被删除");
+					json.set_success(false);
+				}
+			} else {
+				json.setError_msg("请先登录");
+				json.set_success(false);
+			}
+		} catch (Exception e) {
+			if (e.getClass().getName()
+					.equals("javax.crypto.IllegalBlockSizeException")
+					|| e.getClass().getName()
+							.equals("java.lang.IllegalArgumentException")) { //
+				String error_msg = "登陆标志出错";
+				json.setError_msg(error_msg);
+				json.set_success(false);
+			} else {
+				String error_msg = "操作失败";
+				json.setError_msg(error_msg);
+				json.set_success(false);
+			}
+		}
+		return json;
+	}
+}
