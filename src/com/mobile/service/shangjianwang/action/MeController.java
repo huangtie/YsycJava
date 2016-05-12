@@ -4749,8 +4749,6 @@ public class MeController {
 		MapJson json = new MapJson();
 		json.setErrorMsg("²ÎÊý´íÎó");
 		json.setErrorCode("9998");
-		
-
 		try {
 			//test.testPush();
 
