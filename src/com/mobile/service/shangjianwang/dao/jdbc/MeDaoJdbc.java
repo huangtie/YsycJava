@@ -88,8 +88,6 @@ public class MeDaoJdbc implements MeDao {
 		String userNick = request.getParameter("userNick");
 		String sql = "";
 		
-		PushUtil.testPushxxx();
-		
 		if(userType.equals("0"))
 		{
 			String sqlhave = "select count(*) from [user] where userTou='" + param.getUdid() + "'";
@@ -161,6 +159,7 @@ public class MeDaoJdbc implements MeDao {
 		CommonParam param = new CommonParam(request);
 		String userName = request.getParameter("userName");
 		String userPassword = request.getParameter("userPassword");
+		userPassword = Base64SecurityUtil.getDecryptString(userPassword);
 		String userNick = request.getParameter("userNick");
 		
 		
@@ -179,7 +178,7 @@ public class MeDaoJdbc implements MeDao {
 		String date_str=df.format(date);
 		String sqlInser = "insert into [user] (userName,userNick,userType,userTime,userPassword) values('"
 								+ userName + "','"
-								 + userNick  +  "','" + "1" + "','" + date_str + "','" + Getnetmd5.md5(userPassword) + "')";
+								 + userNick  +  "','" + "1" + "','" + date_str + "','" + pass + "')";
 		
 		
 		this.sqljdbcTemplate.execute(sqlInser);		

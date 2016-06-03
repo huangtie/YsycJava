@@ -152,6 +152,10 @@ public class Response implements ResIntf{
 		//下载量
 		result.put("bookDowns", mapdata.get("bookDowns"));
 		
+		//专家
+		Map<String, Object> author = this.sqljdbcTemplate.queryForMap("select * from [author] where authorID = '" + mapdata.get("bookAuthor") + "'");
+		result.put("author", this.dataWithAuthorInfo(author));
+		
 		//评论数量 和 评分
 		String countsql = "select count(*) as count,sum(commentPoint) as he from [pinglun] where bookID = '" + mapdata.get("bookID") + "'";
 		Map<String, Object> count = this.sqljdbcTemplate.queryForMap(countsql);
@@ -196,10 +200,6 @@ public class Response implements ResIntf{
 			
 			//分享链接
 			result.put("shareURL", Constants.ShareHtmlPath + mapdata.get("bookID"));
-			
-			//专家
-			Map<String, Object> author = this.sqljdbcTemplate.queryForMap("select * from [author] where authorID = '" + mapdata.get("bookAuthor") + "'");
-			result.put("author", this.dataWithAuthorInfo(author));
 		}
 
 		
